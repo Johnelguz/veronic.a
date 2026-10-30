@@ -10,6 +10,9 @@
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- QR code is generated in the browser so contact details are not sent to a QR service -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   
   <!-- Google Fonts: Inter & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -703,21 +706,24 @@
         <i data-lucide="smartphone" class="w-6 h-6"></i>
       </div>
 
-      <h3 class="text-xl font-bold text-slate-900" data-i18n="qr_modal_title">WhatsApp Contact</h3>
-      <p class="text-slate-500 text-xs mt-1 mb-6" data-i18n="qr_modal_sub">Scan to open a WhatsApp chat with Veronica Carlos.</p>
+      <h3 class="text-xl font-bold text-slate-900" data-i18n="qr_modal_title">Save Contact</h3>
+      <p class="text-slate-500 text-xs mt-1 mb-6" data-i18n="qr_modal_sub">Scan to save Veronica Carlos's contact to your phone.</p>
 
-      <!-- Generated QR Code Image -->
+      <!-- QR code contains a vCard and is generated locally in the browser -->
       <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-4 shadow-inner">
-        <img id="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data=https%3A%2F%2Fwa.me%2F13476761590&amp;color=2E7D32" alt="WhatsApp contact QR code for Veronica Carlos" class="w-48 h-48 mx-auto rounded-lg">
+        <div id="qr-code" class="w-48 h-48 mx-auto" role="img" aria-label="Contact QR code for Veronica Carlos"></div>
       </div>
 
       <div class="text-[11px] text-slate-400 font-medium space-y-1">
         <p class="font-bold text-slate-700">Veronica Carlos</p>
         <p>Medcore Pharmacy</p>
         <p data-i18n="qr_contact_role">Director of Marketing and Partnerships</p>
-        <p><span data-i18n="qr_contact_whatsapp">WhatsApp</span>: <a href="https://wa.me/13476761590" class="font-semibold text-medcore-emerald hover:underline">+1 (347) 676-1590</a></p>
+        <p><span data-i18n="qr_contact_phone">Phone</span>: +1 (347) 676-1590</p>
       </div>
 
+      <button onclick="saveContactCard()" class="mt-5 w-full bg-medcore-emerald text-white font-bold py-3 rounded-xl hover:bg-medcore-emerald/90 transition-colors text-sm" data-i18n="btn_save_contact">
+        Save Contact
+      </button>
       <button onclick="closeQRModal()" class="mt-6 w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors text-sm" data-i18n="btn_close">
         Done
       </button>
@@ -734,6 +740,16 @@
     const totalSlides = 6;
     let currentLang = 'en';
     let currentViewMode = 'deck'; // 'deck' or 'overview'
+    const contactVCard = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      'N:Carlos;Veronica;;;',
+      'FN:Veronica Carlos',
+      'ORG:Medcore Pharmacy',
+      'TITLE:Director of Marketing and Partnerships',
+      'TEL;TYPE=CELL,VOICE:+13476761590',
+      'END:VCARD'
+    ].join('\r\n');
 
     // Touch Swipe Variables for iPad
     let touchStartX = 0;
@@ -803,10 +819,11 @@
         ov_pa_tag: "Full Paperwork Support",
         ov_cost_tag: "Coupons & Rebates Search",
         ov_deliv_tag: "Strategic Local Zones",
-        qr_modal_title: "WhatsApp Contact",
-        qr_modal_sub: "Scan to open a WhatsApp chat with Veronica Carlos.",
+        qr_modal_title: "Save Contact",
+        qr_modal_sub: "Scan to save Veronica Carlos's contact to your phone.",
         qr_contact_role: "Director of Marketing and Partnerships",
-        qr_contact_whatsapp: "WhatsApp",
+        qr_contact_phone: "Phone",
+        btn_save_contact: "Save Contact",
         btn_close: "Done"
       },
       es: {
@@ -871,10 +888,11 @@
         ov_pa_tag: "Gestión Documental Completa",
         ov_cost_tag: "Búsqueda de Cupones y Descuentos",
         ov_deliv_tag: "Zonas Locales Estratégicas",
-        qr_modal_title: "Contacto de WhatsApp",
-        qr_modal_sub: "Escanee para abrir un chat de WhatsApp con Veronica Carlos.",
+        qr_modal_title: "Guardar contacto",
+        qr_modal_sub: "Escanee para guardar el contacto de Veronica Carlos en su teléfono.",
         qr_contact_role: "Directora de Marketing y Alianzas",
-        qr_contact_whatsapp: "WhatsApp",
+        qr_contact_phone: "Teléfono",
+        btn_save_contact: "Guardar contacto",
         btn_close: "Listo"
       }
     };
@@ -1002,6 +1020,18 @@
       card.classList.add('scale-95');
     }
 
+    function saveContactCard() {
+      const contactFile = new Blob([contactVCard], { type: 'text/vcard;charset=utf-8' });
+      const downloadUrl = URL.createObjectURL(contactFile);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = 'veronica-carlos.vcf';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+
     // Copy Contact Details to Clipboard
     function copyContactInfo() {
       const contactText = `Medcore Specialty Rx Corp.\nPhone: 212-832-7200\nFax: 212-832-7211\nAddress: 1058 1st Ave, New York, NY 10022`;
@@ -1055,6 +1085,14 @@
 
     // Initial Load Setup
     window.onload = function() {
+      new QRCode(document.getElementById('qr-code'), {
+        text: contactVCard,
+        width: 192,
+        height: 192,
+        colorDark: '#2E7D32',
+        colorLight: '#F8FAFC',
+        correctLevel: QRCode.CorrectLevel.M
+      });
       goToSlide(0);
     };
   </script>
