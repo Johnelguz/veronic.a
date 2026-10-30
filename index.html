@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Medcore Specialty Rx - Interactive iPad Presenter</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- QR code is generated in the browser so contact details are not sent to a QR service -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            medcore: {
+              green: '#4CAF50',
+              emerald: '#2E7D32',
+              lightGreen: '#E8F5E9',
+              sage: '#A5D6A7',
+              red: '#E53935',
+              dark: '#1E293B',
+              slate: '#334155',
+              grayBg: '#F8FAFC'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          boxShadow: {
+            'glow': '0 10px 25px -5px rgba(76, 175, 80, 0.25)',
+            'card': '0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
+            'touch': '0 4px 14px 0 rgba(0, 0, 0, 0.1)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom CSS Animations & Smooth Scrolling */
+    body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .slide-transition {
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    /* Custom scrollbar for desktop preview */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+
+    .active-pill {
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 font-sans text-slate-800 antialiased overflow-hidden min-h-screen flex items-center justify-center p-0 md:p-4">
+
+  <!-- Main iPad Enclosure Mockup Container -->
+  <div class="w-full h-screen md:h-[94vh] md:max-w-[1280px] bg-medcore-grayBg md:rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border border-slate-700/30">
+
+    <!-- TOP HEADER / CONTROL BAR -->
+    <header class="bg-white border-b border-slate-200/80 px-4 py-3 md:px-6 md:py-3.5 flex items-center justify-between z-30 shrink-0">
+      <!-- Brand Logo Header -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="goToSlide(0)">
+        <div class="bg-medcore-green/10 p-2 rounded-xl border border-medcore-green/20 flex items-center justify-center">
+          <div class="relative w-7 h-7 flex items-center justify-center">
+            <i data-lucide="plus" class="w-7 h-7 text-medcore-red stroke-[3]"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1">
+            <span class="font-heading font-extrabold text-xl tracking-tight text-medcore-emerald">MEDCORE</span>
+            <span class="text-xs bg-medcore-red/10 text-medcore-red font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Rx</span>
+          </div>
+          <p class="text-[10px] text-slate-500 font-medium tracking-wide uppercase">Specialty Rx Corp.</p>
+        </div>
+      </div>
+
+      <!-- Navigation Mode & Toggle Controls -->
+      <div class="flex items-center space-x-2 md:space-x-4">
+        
+        <!-- Language Switcher -->
+        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-semibold">
+          <button id="lang-en" onclick="setLanguage('en')" class="px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-medcore-emerald shadow-sm">EN</button>
+          <button id="lang-es" onclick="setLanguage('es')" class="px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">ES</button>
+        </div>
+
+        <!-- Mode Toggle Button (Interactive Pitch Deck vs All-in-One Overview) -->
+        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+          <button id="mode-deck-btn" onclick="setViewMode('deck')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-medcore-emerald text-white shadow-sm">
+            <i data-lucide="presentation" class="w-4 h-4"></i>
+            <span class="hidden sm:inline" data-i18n="nav_presentation">Pitch Mode</span>
+          </button>
+          <button id="mode-overview-btn" onclick="setViewMode('overview')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 text-slate-600 hover:text-slate-900">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            <span class="hidden sm:inline" data-i18n="nav_overview">All-in-One</span>
+          </button>
+        </div>
+
+        <!-- Dynamic QR Code Popup Trigger Button -->
+        <button onclick="openQRModal()" class="flex items-center space-x-1.5 bg-medcore-green/15 hover:bg-medcore-green/25 text-medcore-emerald border border-medcore-green/30 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm">
+          <i data-lucide="qr-code" class="w-4 h-4 text-medcore-emerald"></i>
+          <span class="hidden md:inline" data-i18n="btn_qr">Doctor Scan</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE CONTENT AREA -->
+    <main class="flex-1 relative overflow-hidden bg-gradient-to-br from-slate-50 via-green-50/20 to-emerald-50/30">
+      
+      <!-- MODE 1: DYNAMIC STEP-BY-STEP PRESENTATION SLIDE DECK -->
+      <div id="presentation-view" class="w-full h-full relative flex flex-col justify-between">
+        
+        <!-- Slide Stage Area -->
+        <div class="flex-1 relative overflow-hidden">
+          
+          <!-- SLIDE 0: COVER / MISSION -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-between opacity-100 translate-x-0 transition-all duration-500 pointer-events-auto" data-slide="0">
+            <div class="max-w-4xl mx-auto w-full h-full flex flex-col justify-center items-center text-center my-auto">
+              
+              <div class="inline-flex items-center space-x-2 bg-medcore-green/10 border border-medcore-green/20 text-medcore-emerald px-4 py-1.5 rounded-full text-sm font-semibold mb-6 animate-pulse">
+                <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+                <span data-i18n="hero_badge">Specialty Pharmacy Support</span>
+              </div>
+
+              <h1 class="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6 font-heading">
+                Let Medcore Pharmacy <br class="hidden sm:inline">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-medcore-emerald to-medcore-green">Connect the Dots</span> for You!
+              </h1>
+
+              <div class="glass-panel p-6 md:p-8 rounded-3xl shadow-card max-w-3xl border border-emerald-100/60 mb-8 relative">
+                <i data-lucide="quote" class="w-8 h-8 text-medcore-green/30 absolute -top-4 -left-2"></i>
+                <p class="text-base md:text-xl text-slate-700 leading-relaxed font-normal" data-i18n="mission_text">
+                  "We help providers navigate through the regimen options considering insurance coverage and drug availability to provide a seamless service for the patient."
+                </p>
+              </div>
+
+              <!-- Quick Action Callouts -->
+              <div class="grid grid-cols-3 gap-3 md:gap-6 w-full max-w-2xl text-left">
+                <div class="bg-white/80 p-3.5 md:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                    <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs md:text-sm font-bold text-slate-800" data-i18n="quick_pa">Prior Auth</h4>
+                    <p class="text-[11px] text-slate-500" data-i18n="quick_pa_sub">Full Management</p>
+                  </div>
+                </div>
+
+                <div class="bg-white/80 p-3.5 md:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-medcore-emerald shrink-0">
+                    <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs md:text-sm font-bold text-slate-800" data-i18n="quick_cost">Cost Savings</h4>
+                    <p class="text-[11px] text-slate-500" data-i18n="quick_cost_sub">Co-pay & Coupons</p>
+                  </div>
+                </div>
+
+                <div class="bg-white/80 p-3.5 md:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-3">
+                  <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs md:text-sm font-bold text-slate-800" data-i18n="quick_delivery">Free Delivery</h4>
+                    <p class="text-[11px] text-slate-500" data-i18n="quick_delivery_sub">Strategic Zones</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 1: PRIOR AUTHORIZATION ASSISTANCE -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-center opacity-0 translate-x-full transition-all duration-500 pointer-events-none" data-slide="1">
+            <div class="max-w-4xl mx-auto w-full grid md:grid-cols-12 gap-8 items-center">
+              
+              <!-- Left Visual Box -->
+              <div class="md:col-span-5 bg-gradient-to-br from-emerald-500 to-medcore-emerald rounded-3xl p-8 text-white shadow-glow relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                <div class="absolute -right-10 -bottom-10 opacity-15">
+                  <i data-lucide="clipboard-check" class="w-64 h-64"></i>
+                </div>
+                <div>
+                  <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide uppercase">Core Pillar 01</span>
+                  <h2 class="text-2xl md:text-3xl font-extrabold mt-4 font-heading" data-i18n="pa_title">Prior Authorization Assistance</h2>
+                </div>
+                
+                <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-white text-medcore-emerald flex items-center justify-center font-extrabold text-lg">98%</div>
+                    <div>
+                      <p class="text-xs text-emerald-100 font-medium" data-i18n="pa_stat_label">Approval Focus</p>
+                      <p class="text-sm font-bold text-white" data-i18n="pa_stat_desc">Streamlined Workflow</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Content Box -->
+              <div class="md:col-span-7 space-y-6">
+                <div class="bg-white p-8 rounded-3xl shadow-card border border-slate-200/80">
+                  <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-4" data-i18n="pa_heading">Hassle-Free Administrative Relief</h3>
+                  <p class="text-slate-600 text-base md:text-lg leading-relaxed mb-6" data-i18n="pa_body">
+                    Our knowledge teams help to manage prior authorization paperwork, allowing more time for you and your staff to care for patients.
+                  </p>
+                  
+                  <ul class="space-y-3">
+                    <li class="flex items-start space-x-3">
+                      <div class="p-1 bg-emerald-100 text-medcore-emerald rounded-lg mt-0.5"><i data-lucide="check" class="w-4 h-4"></i></div>
+                      <span class="text-slate-700 text-sm md:text-base font-medium" data-i18n="pa_feat_1">End-to-end PA paperwork tracking and submission</span>
+                    </li>
+                    <li class="flex items-start space-x-3">
+                      <div class="p-1 bg-emerald-100 text-medcore-emerald rounded-lg mt-0.5"><i data-lucide="check" class="w-4 h-4"></i></div>
+                      <span class="text-slate-700 text-sm md:text-base font-medium" data-i18n="pa_feat_2">Direct coordination with insurance providers</span>
+                    </li>
+                    <li class="flex items-start space-x-3">
+                      <div class="p-1 bg-emerald-100 text-medcore-emerald rounded-lg mt-0.5"><i data-lucide="check" class="w-4 h-4"></i></div>
+                      <span class="text-slate-700 text-sm md:text-base font-medium" data-i18n="pa_feat_3">Reduces burden on clinical office staff</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 2: REDUCING PATIENT COSTS -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-center opacity-0 translate-x-full transition-all duration-500 pointer-events-none" data-slide="2">
+            <div class="max-w-4xl mx-auto w-full grid md:grid-cols-12 gap-8 items-center">
+              
+              <!-- Left Visual Box -->
+              <div class="md:col-span-5 bg-gradient-to-br from-teal-600 to-emerald-700 rounded-3xl p-8 text-white shadow-glow relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                <div class="absolute -right-10 -bottom-10 opacity-15">
+                  <i data-lucide="badge-dollar-sign" class="w-64 h-64"></i>
+                </div>
+                <div>
+                  <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide uppercase">Core Pillar 02</span>
+                  <h2 class="text-2xl md:text-3xl font-extrabold mt-4 font-heading" data-i18n="cost_title">Reducing Patient Costs</h2>
+                </div>
+
+                <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-white text-teal-700 flex items-center justify-center font-extrabold text-lg">
+                      <i data-lucide="trending-down" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs text-teal-100 font-medium" data-i18n="cost_stat_label">Co-Pay Optimization</p>
+                      <p class="text-sm font-bold text-white" data-i18n="cost_stat_desc">Max Savings Utilized</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Content Box -->
+              <div class="md:col-span-7 space-y-6">
+                <div class="bg-white p-8 rounded-3xl shadow-card border border-slate-200/80">
+                  <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-4" data-i18n="cost_heading">Financial Assistance & Copay Support</h3>
+                  <p class="text-slate-600 text-base md:text-lg leading-relaxed mb-6" data-i18n="cost_body">
+                    We do our research, utilizing all available manufacturer and insurance company resources such as coupons, rebates, and discounts to keep patient co-pays as low as possible.
+                  </p>
+                  
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-teal-50/60 p-3.5 rounded-2xl border border-teal-100 text-center">
+                      <i data-lucide="ticket" class="w-6 h-6 text-teal-600 mx-auto mb-1"></i>
+                      <span class="text-xs font-bold text-slate-800 block" data-i18n="cost_pill_1">Manufacturer Coupons</span>
+                    </div>
+                    <div class="bg-teal-50/60 p-3.5 rounded-2xl border border-teal-100 text-center">
+                      <i data-lucide="receipt text-teal-600" class="w-6 h-6 mx-auto mb-1"></i>
+                      <span class="text-xs font-bold text-slate-800 block" data-i18n="cost_pill_2">Rebate Programs</span>
+                    </div>
+                    <div class="bg-teal-50/60 p-3.5 rounded-2xl border border-teal-100 text-center">
+                      <i data-lucide="percent" class="w-6 h-6 text-teal-600 mx-auto mb-1"></i>
+                      <span class="text-xs font-bold text-slate-800 block" data-i18n="cost_pill_3">Patient Discounts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 3: FAST, FREE DELIVERY -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-center opacity-0 translate-x-full transition-all duration-500 pointer-events-none" data-slide="3">
+            <div class="max-w-4xl mx-auto w-full grid md:grid-cols-12 gap-8 items-center">
+              
+              <!-- Left Visual Box -->
+              <div class="md:col-span-5 bg-gradient-to-br from-emerald-600 to-green-700 rounded-3xl p-8 text-white shadow-glow relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                <div class="absolute -right-10 -bottom-10 opacity-15">
+                  <i data-lucide="truck" class="w-64 h-64"></i>
+                </div>
+                <div>
+                  <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide uppercase">Core Pillar 03</span>
+                  <h2 class="text-2xl md:text-3xl font-extrabold mt-4 font-heading" data-i18n="deliv_title">Fast, Free Delivery</h2>
+                </div>
+
+                <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-white text-emerald-700 flex items-center justify-center font-extrabold text-lg">
+                      <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs text-emerald-100 font-medium" data-i18n="deliv_stat_label">Reduced Wait Times</p>
+                      <p class="text-sm font-bold text-white" data-i18n="deliv_stat_desc">Strategic Delivery Zones</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Content Box -->
+              <div class="md:col-span-7 space-y-6">
+                <div class="bg-white p-8 rounded-3xl shadow-card border border-slate-200/80">
+                  <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-4" data-i18n="deliv_heading">Prompt Door-to-Door Service</h3>
+                  <p class="text-slate-600 text-base md:text-lg leading-relaxed mb-6" data-i18n="deliv_body">
+                    Our Strategic delivery zones and clear communication reduce patient wait times and ensure treatment adherence.
+                  </p>
+                  
+                  <div class="space-y-3">
+                    <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-medcore-emerald flex items-center justify-center font-bold">1</div>
+                      <span class="text-slate-700 text-sm font-medium" data-i18n="deliv_step1">Direct patient communication & order tracking</span>
+                    </div>
+                    <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-medcore-emerald flex items-center justify-center font-bold">2</div>
+                      <span class="text-slate-700 text-sm font-medium" data-i18n="deliv_step2">Temperature-controlled medication transit</span>
+                    </div>
+                    <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-medcore-emerald flex items-center justify-center font-bold">3</div>
+                      <span class="text-slate-700 text-sm font-medium" data-i18n="deliv_step3">Zero delivery cost for patients</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 4: SPECIALTIES LIST -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-center opacity-0 translate-x-full transition-all duration-500 pointer-events-none" data-slide="4">
+            <div class="max-w-4xl mx-auto w-full text-center">
+              
+              <div class="mb-6">
+                <span class="bg-medcore-green/10 text-medcore-emerald border border-medcore-green/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Clinical Coverage</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 mt-2 font-heading" data-i18n="spec_title">We Specialize In</h2>
+                <p class="text-slate-500 text-sm md:text-base mt-1" data-i18n="spec_subtitle">Providing comprehensive specialty pharmacy services across key medical fields</p>
+              </div>
+
+              <!-- Specialty Cards Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+                
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="stetho-scope" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_1">Internal Medicine</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_2">Family Medicine</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_3">Dermatology</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_4">Rheumatology</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="brain" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_5">Neurology</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_6">Immunotherapy</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="eye" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_7">Ophthalmology</h4>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-medcore-green/50 text-center group">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 text-medcore-emerald flex items-center justify-center mb-2 group-hover:bg-medcore-emerald group-hover:text-white transition-colors">
+                    <i data-lucide="footprints" class="w-6 h-6"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-800 text-sm md:text-base" data-i18n="spec_8">Podiatry</h4>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 5: CONTACT & SUMMARY -->
+          <div class="slide-item absolute inset-0 p-6 md:p-12 flex flex-col justify-center opacity-0 translate-x-full transition-all duration-500 pointer-events-none" data-slide="5">
+            <div class="max-w-4xl mx-auto w-full grid md:grid-cols-12 gap-8 items-center">
+              
+              <div class="md:col-span-5 bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[340px]">
+                <div class="absolute -right-8 -bottom-8 opacity-10 text-white">
+                  <i data-lucide="building-2" class="w-60 h-60"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2 text-medcore-green mb-3">
+                    <i data-lucide="plus" class="w-6 h-6 text-medcore-red stroke-[3]"></i>
+                    <span class="font-bold tracking-wide uppercase text-sm">Medcore Pharmacy</span>
+                  </div>
+                  <h2 class="text-2xl md:text-3xl font-extrabold font-heading text-white" data-i18n="contact_card_title">Ready to Connect?</h2>
+                  <p class="text-slate-400 text-sm mt-2" data-i18n="contact_card_sub">We are here to streamline your patient prescription and PA workflow today.</p>
+                </div>
+
+                <div class="space-y-3 mt-6">
+                  <div class="flex items-center space-x-3 text-slate-200 bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                    <i data-lucide="phone" class="w-5 h-5 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 uppercase tracking-wider block" data-i18n="contact_phone_lbl">Phone</span>
+                      <a href="tel:2128327200" class="text-sm font-bold hover:text-medcore-green transition-colors">212-832-7200</a>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-3 text-slate-200 bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                    <i data-lucide="printer" class="w-5 h-5 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 uppercase tracking-wider block" data-i18n="contact_fax_lbl">Fax</span>
+                      <span class="text-sm font-bold">212-832-7211</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-3 text-slate-200 bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 uppercase tracking-wider block" data-i18n="contact_addr_lbl">Address</span>
+                      <span class="text-xs font-semibold">1058 1st Ave, New York, NY 10022</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="md:col-span-7 bg-white p-8 rounded-3xl shadow-card border border-slate-200/80 text-center">
+                <div class="w-16 h-16 bg-medcore-green/10 text-medcore-emerald rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <i data-lucide="send" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-2" data-i18n="share_doc_title">Share Details with Doctor</h3>
+                <p class="text-slate-600 text-sm mb-6" data-i18n="share_doc_sub">Generate an instant digital reference card or QR code for the doctor's phone.</p>
+                
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button onclick="openQRModal()" class="bg-medcore-emerald hover:bg-medcore-emerald/90 text-white font-bold py-3 px-6 rounded-xl shadow-glow transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="qr-code" class="w-5 h-5"></i>
+                    <span data-i18n="btn_show_qr">Display QR Code</span>
+                  </button>
+
+                  <button onclick="copyContactInfo()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center space-x-2 border border-slate-200">
+                    <i data-lucide="copy" class="w-5 h-5"></i>
+                    <span id="copy-btn-text" data-i18n="btn_copy">Copy Contact Info</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SLIDE NAVIGATION FOOTER (PITCH MODE) -->
+        <div class="bg-white/90 backdrop-blur-md border-t border-slate-200 px-6 py-3.5 flex items-center justify-between z-20 shrink-0">
+          
+          <!-- Prev Button -->
+          <button id="prev-btn" onclick="prevSlide()" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 font-bold text-sm px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all disabled:opacity-30 disabled:pointer-events-none">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            <span data-i18n="nav_prev">Previous</span>
+          </button>
+
+          <!-- Interactive Slide Indicator Dots & Tabs -->
+          <div class="flex items-center space-x-2 overflow-x-auto max-w-[60%] py-1 no-scrollbar">
+            <button onclick="goToSlide(0)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-medcore-emerald text-white active-pill" data-dot="0">Intro</button>
+            <button onclick="goToSlide(1)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-dot="1">Prior Auth</button>
+            <button onclick="goToSlide(2)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-dot="2">Costs</button>
+            <button onclick="goToSlide(3)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-dot="3">Delivery</button>
+            <button onclick="goToSlide(4)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-dot="4">Specialties</button>
+            <button onclick="goToSlide(5)" class="slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-dot="5">Contact</button>
+          </div>
+
+          <!-- Next Button -->
+          <button id="next-btn" onclick="nextSlide()" class="flex items-center space-x-1.5 text-white bg-medcore-emerald hover:bg-medcore-emerald/90 font-bold text-sm px-5 py-2.5 rounded-xl shadow-glow transition-all">
+            <span data-i18n="nav_next">Next</span>
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- MODE 2: ALL-IN-ONE OVERVIEW DASHBOARD MODE -->
+      <div id="overview-view" class="w-full h-full overflow-y-auto p-4 md:p-8 hidden">
+        <div class="max-w-6xl mx-auto space-y-6">
+          
+          <!-- Overview Header Banner -->
+          <div class="bg-gradient-to-r from-medcore-emerald to-emerald-600 text-white rounded-3xl p-6 md:p-8 shadow-glow relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="relative z-10 max-w-2xl">
+              <div class="flex items-center space-x-2 text-emerald-200 mb-2 font-bold text-sm">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                <span data-i18n="overview_badge">Executive One-Page Summary</span>
+              </div>
+              <h2 class="text-2xl md:text-4xl font-extrabold font-heading" data-i18n="overview_hero_title">Medcore Specialty Rx Corp.</h2>
+              <p class="text-emerald-100 text-sm md:text-base mt-2" data-i18n="mission_text">
+                "We help providers navigate through the regimen options considering insurance coverage and drug availability to provide a seamless service for the patient."
+              </p>
+            </div>
+
+            <!-- Quick Action QR Button inside Banner -->
+            <button onclick="openQRModal()" class="bg-white text-medcore-emerald hover:bg-emerald-50 px-5 py-3 rounded-2xl font-extrabold text-sm shadow-md transition-all shrink-0 flex items-center space-x-2">
+              <i data-lucide="qr-code" class="w-5 h-5"></i>
+              <span data-i18n="btn_qr">Doctor QR Code</span>
+            </button>
+          </div>
+
+          <!-- 3 Pillar Cards Row -->
+          <div class="grid md:grid-cols-3 gap-4">
+            
+            <!-- Pillar 1 -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-card flex flex-col justify-between">
+              <div>
+                <div class="w-12 h-12 bg-emerald-100 text-medcore-emerald rounded-2xl flex items-center justify-center mb-4">
+                  <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg mb-2" data-i18n="pa_title">Prior Authorization Assistance</h3>
+                <p class="text-slate-600 text-sm leading-relaxed" data-i18n="pa_body">
+                  Our knowledge team helps to manage prior authorization paperwork, allowing more time for you and your staff to care for patients.
+                </p>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-xs font-bold text-medcore-emerald">
+                <i data-lucide="check-circle-2" class="w-4 h-4 mr-1"></i>
+                <span data-i18n="ov_pa_tag">Full Paperwork Support</span>
+              </div>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-card flex flex-col justify-between">
+              <div>
+                <div class="w-12 h-12 bg-teal-100 text-teal-700 rounded-2xl flex items-center justify-center mb-4">
+                  <i data-lucide="badge-dollar-sign" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg mb-2" data-i18n="cost_title">Reducing Patient Costs</h3>
+                <p class="text-slate-600 text-sm leading-relaxed" data-i18n="cost_body">
+                  We do our research, utilizing all available manufacturer and insurance company resources such as coupons, rebates, and discounts to keep patient co-pays as low as possible.
+                </p>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-xs font-bold text-teal-700">
+                <i data-lucide="check-circle-2" class="w-4 h-4 mr-1"></i>
+                <span data-i18n="ov_cost_tag">Coupons & Rebates Search</span>
+              </div>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-card flex flex-col justify-between">
+              <div>
+                <div class="w-12 h-12 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center mb-4">
+                  <i data-lucide="truck" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg mb-2" data-i18n="deliv_title">Fast, Free Delivery</h3>
+                <p class="text-slate-600 text-sm leading-relaxed" data-i18n="deliv_body">
+                  Our strategic delivery zones and clear communication reduce patient wait times.
+                </p>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-xs font-bold text-blue-700">
+                <i data-lucide="check-circle-2" class="w-4 h-4 mr-1"></i>
+                <span data-i18n="ov_deliv_tag">Strategic Local Zones</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Grid: Specialties & Direct Contact Card -->
+          <div class="grid md:grid-cols-12 gap-4">
+            
+            <!-- Specialties Matrix (7 cols) -->
+            <div class="md:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-card">
+              <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">
+                <i data-lucide="stethoscope" class="w-5 h-5 text-medcore-emerald"></i>
+                <span data-i18n="spec_title">We Specialize In:</span>
+              </h3>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_1">Internal Medicine</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_2">Family Medicine</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_3">Dermatology</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_4">Rheumatology</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_5">Neurology</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_6">Immunotherapy</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_7">Ophthalmology</span></div>
+                <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-xs font-bold text-slate-800" data-i18n="spec_8">Podiatry</span></div>
+              </div>
+            </div>
+
+            <!-- Contact Box (5 cols) -->
+            <div class="md:col-span-5 bg-slate-900 text-white p-6 rounded-3xl shadow-card flex flex-col justify-between">
+              <div>
+                <div class="flex items-center space-x-2 text-medcore-green mb-2">
+                  <i data-lucide="plus" class="w-5 h-5 text-medcore-red stroke-[3]"></i>
+                  <span class="font-extrabold tracking-wide uppercase text-xs">Medcore Pharmacy</span>
+                </div>
+                <h4 class="text-xl font-bold font-heading mb-4" data-i18n="contact_card_title">Ready to Connect?</h4>
+
+                <div class="space-y-2.5 text-xs">
+                  <div class="flex items-center space-x-3 bg-slate-800 p-2.5 rounded-xl">
+                    <i data-lucide="phone" class="w-4 h-4 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 block" data-i18n="contact_phone_lbl">PHONE</span>
+                      <a href="tel:2128327200" class="font-bold text-white hover:text-medcore-green">212-832-7200</a>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-3 bg-slate-800 p-2.5 rounded-xl">
+                    <i data-lucide="printer" class="w-4 h-4 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 block" data-i18n="contact_fax_lbl">FAX</span>
+                      <span class="font-bold text-white">212-832-7211</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-3 bg-slate-800 p-2.5 rounded-xl">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-medcore-green shrink-0"></i>
+                    <div>
+                      <span class="text-[10px] text-slate-400 block" data-i18n="contact_addr_lbl">ADDRESS</span>
+                      <span class="font-semibold text-slate-200">1058 1st Ave, New York, NY 10022</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+                <span class="text-[11px] text-slate-400">Medcore Specialty Rx Corp.</span>
+                <button onclick="openQRModal()" class="text-xs text-medcore-green hover:underline font-bold flex items-center space-x-1">
+                  <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                  <span data-i18n="btn_show_qr">QR Code</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- INTERACTIVE QR CODE MODAL POPUP -->
+  <div id="qr-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl text-center transform scale-95 transition-transform duration-300 relative border border-slate-100" id="qr-modal-card">
+      
+      <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 p-2 rounded-full transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="w-12 h-12 bg-medcore-green/10 text-medcore-emerald rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="smartphone" class="w-6 h-6"></i>
+      </div>
+
+      <h3 class="text-xl font-bold text-slate-900" data-i18n="qr_modal_title">Save Contact</h3>
+      <p class="text-slate-500 text-xs mt-1 mb-6" data-i18n="qr_modal_sub">Scan to save Veronica Carlos's contact to your phone.</p>
+
+      <!-- QR code contains a vCard and is generated locally in the browser -->
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-4 shadow-inner">
+        <div id="qr-code" class="w-48 h-48 mx-auto" role="img" aria-label="Contact QR code for Veronica Carlos"></div>
+      </div>
+
+      <div class="text-[11px] text-slate-400 font-medium space-y-1">
+        <p class="font-bold text-slate-700">Veronica Carlos</p>
+        <p>Medcore Pharmacy</p>
+        <p data-i18n="qr_contact_role">Director of Marketing and Partnerships</p>
+        <p><span data-i18n="qr_contact_phone">Phone</span>: +1 (347) 676-1590</p>
+      </div>
+
+      <button onclick="saveContactCard()" class="mt-5 w-full bg-medcore-emerald text-white font-bold py-3 rounded-xl hover:bg-medcore-emerald/90 transition-colors text-sm" data-i18n="btn_save_contact">
+        Save Contact
+      </button>
+      <button onclick="closeQRModal()" class="mt-6 w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors text-sm" data-i18n="btn_close">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC FOR SLIDES, TOUCH SWIPES, LANGUAGES & MODALS -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // App State
+    let currentSlide = 0;
+    const totalSlides = 6;
+    let currentLang = 'en';
+    let currentViewMode = 'deck'; // 'deck' or 'overview'
+    const contactVCard = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      'N:Carlos;Veronica;;;',
+      'FN:Veronica Carlos',
+      'ORG:Medcore Pharmacy',
+      'TITLE:Director of Marketing and Partnerships',
+      'TEL;TYPE=CELL,VOICE:+13476761590',
+      'END:VCARD'
+    ].join('\r\n');
+
+    // Touch Swipe Variables for iPad
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    // Translations Dictionary
+    const translations = {
+      en: {
+        nav_presentation: "Pitch Mode",
+        nav_overview: "All-in-One",
+        btn_qr: "Doctor Scan",
+        hero_badge: "Specialty Pharmacy Support",
+        mission_text: `"We help providers navigate through the regimen options considering insurance coverage and drug availability to provide a seamless service for the patient."`,
+        quick_pa: "Prior Auth",
+        quick_pa_sub: "Full Management",
+        quick_cost: "Cost Savings",
+        quick_cost_sub: "Co-pay & Coupons",
+        quick_delivery: "Free Delivery",
+        quick_delivery_sub: "Strategic Zones",
+        pa_title: "Prior Authorization Assistance",
+        pa_stat_label: "Approval Focus",
+        pa_stat_desc: "Streamlined Workflow",
+        pa_heading: "Hassle-Free Administrative Relief",
+        pa_body: "Our knowledge teams help to manage prior authorization paperwork, allowing more time for you and your staff to care for patients.",
+        pa_feat_1: "End-to-end PA paperwork tracking and submission",
+        pa_feat_2: "Direct coordination with insurance providers",
+        pa_feat_3: "Reduces burden on clinical office staff",
+        cost_title: "Reducing Patient Costs",
+        cost_stat_label: "Co-Pay Optimization",
+        cost_stat_desc: "Max Savings Utilized",
+        cost_heading: "Financial Assistance & Copay Support",
+        cost_body: "We do our research, utilizing all available manufacturer and insurance company resources such as coupons, rebates, and discounts to keep patient co-pays as low as possible.",
+        cost_pill_1: "Manufacturer Coupons",
+        cost_pill_2: "Rebate Programs",
+        cost_pill_3: "Patient Discounts",
+        deliv_title: "Fast, Free Delivery",
+        deliv_stat_label: "Reduced Wait Times",
+        deliv_stat_desc: "Strategic Delivery Zones",
+        deliv_heading: "Prompt Door-to-Door Service",
+        deliv_body: "Our Strategic delivery zones and clear communication reduce patient wait times and ensure treatment adherence.",
+        deliv_step1: "Direct patient communication & order tracking",
+        deliv_step2: "Temperature-controlled medication transit",
+        deliv_step3: "Zero delivery cost for patients",
+        spec_title: "We Specialize In",
+        spec_subtitle: "Providing comprehensive specialty pharmacy services across key medical fields",
+        spec_1: "Internal Medicine",
+        spec_2: "Family Medicine",
+        spec_3: "Dermatology",
+        spec_4: "Rheumatology",
+        spec_5: "Neurology",
+        spec_6: "Immunotherapy",
+        spec_7: "Ophthalmology",
+        spec_8: "Podiatry",
+        contact_card_title: "Ready to Connect?",
+        contact_card_sub: "We are here to streamline your patient prescription and PA workflow today.",
+        contact_phone_lbl: "Phone",
+        contact_fax_lbl: "Fax",
+        contact_addr_lbl: "Address",
+        share_doc_title: "Share Details with Doctor",
+        share_doc_sub: "Generate an instant digital reference card or QR code for the doctor's phone.",
+        btn_show_qr: "Display QR Code",
+        btn_copy: "Copy Contact Info",
+        nav_prev: "Previous",
+        nav_next: "Next",
+        overview_badge: "Executive One-Page Summary",
+        overview_hero_title: "Medcore Specialty Rx Corp.",
+        ov_pa_tag: "Full Paperwork Support",
+        ov_cost_tag: "Coupons & Rebates Search",
+        ov_deliv_tag: "Strategic Local Zones",
+        qr_modal_title: "Save Contact",
+        qr_modal_sub: "Scan to save Veronica Carlos's contact to your phone.",
+        qr_contact_role: "Director of Marketing and Partnerships",
+        qr_contact_phone: "Phone",
+        btn_save_contact: "Save Contact",
+        btn_close: "Done"
+      },
+      es: {
+        nav_presentation: "Modo Presentación",
+        nav_overview: "Vista General",
+        btn_qr: "Escanear Médico",
+        hero_badge: "Soporte de Farmacia Especializada",
+        mission_text: `"Ayudamos a los proveedores a navegar por las opciones de régimen, considerando la cobertura del seguro y la disponibilidad de medicamentos para brindar un servicio perfecto al paciente."`,
+        quick_pa: "Autorización Previa",
+        quick_pa_sub: "Gestión Completa",
+        quick_cost: "Ahorro de Costos",
+        quick_cost_sub: "Copagos y Cupones",
+        quick_delivery: "Entrega Gratuita",
+        quick_delivery_sub: "Zonas Estratégicas",
+        pa_title: "Asistencia de Autorización Previa",
+        pa_stat_label: "Enfoque en Aprobación",
+        pa_stat_desc: "Flujo de Trabajo Eficiente",
+        pa_heading: "Alivio Administrativo Sin Complicaciones",
+        pa_body: "Nuestro equipo experto ayudará a gestionar la documentación de la autorización previa permitiéndole a usted y su personal más tiempo para el cuidado de sus pacientes.",
+        pa_feat_1: "Seguimiento y envío completo de solicitudes de AP",
+        pa_feat_2: "Coordinación directa con las compañías de seguros",
+        pa_feat_3: "Reduce la carga administrativa del personal médico",
+        cost_title: "Reduciendo Los Costos del Paciente",
+        cost_stat_label: "Optimización de Copagos",
+        cost_stat_desc: "Ahorros Máximos Aplicados",
+        cost_heading: "Asistencia Financiera y Apoyo de Copago",
+        cost_body: "Hacemos nuestra investigación utilizando todos los recursos disponibles del fabricante y de la compañía de seguros como cupones, reembolsos, y descuentos para mantener los copagos de los pacientes lo más bajos posibles.",
+        cost_pill_1: "Cupones del Fabricante",
+        cost_pill_2: "Programas de Reembolso",
+        cost_pill_3: "Descuentos para Pacientes",
+        deliv_title: "Entrega Rápida y Gratuita",
+        deliv_stat_label: "Menor Tiempo de Espera",
+        deliv_stat_desc: "Zonas de Entrega Estratégicas",
+        deliv_heading: "Servicio Rápido Puerta a Puerta",
+        deliv_body: "Nuestra estrategia de entrega rápida y una comunicación clara reduce el tiempo de espera de los pacientes.",
+        deliv_step1: "Comunicación directa y rastreo de envíos",
+        deliv_step2: "Transporte de medicamentos con control de temperatura",
+        deliv_step3: "Cero costo de envío para sus pacientes",
+        spec_title: "Nos Especializamos En",
+        spec_subtitle: "Ofreciendo servicios integrales de farmacia especializada en áreas médicas clave",
+        spec_1: "Medicina Interna",
+        spec_2: "Medicina Familiar",
+        spec_3: "Dermatología",
+        spec_4: "Reumatología",
+        spec_5: "Neurología",
+        spec_6: "Inmunoterapia",
+        spec_7: "Oftalmología",
+        spec_8: "Podiatría",
+        contact_card_title: "¿Listo para Conectar?",
+        contact_card_sub: "Estamos listos para optimizar las recetas y autorizaciones previas de sus pacientes.",
+        contact_phone_lbl: "Teléfono",
+        contact_fax_lbl: "Fax",
+        contact_addr_lbl: "Dirección",
+        share_doc_title: "Compartir Información con Médico",
+        share_doc_sub: "Genere una tarjeta digital instantánea o código QR para el teléfono del médico.",
+        btn_show_qr: "Mostrar Código QR",
+        btn_copy: "Copiar Contacto",
+        nav_prev: "Anterior",
+        nav_next: "Siguiente",
+        overview_badge: "Resumen Ejecutivo en Una Página",
+        overview_hero_title: "Medcore Specialty Rx Corp.",
+        ov_pa_tag: "Gestión Documental Completa",
+        ov_cost_tag: "Búsqueda de Cupones y Descuentos",
+        ov_deliv_tag: "Zonas Locales Estratégicas",
+        qr_modal_title: "Guardar contacto",
+        qr_modal_sub: "Escanee para guardar el contacto de Veronica Carlos en su teléfono.",
+        qr_contact_role: "Directora de Marketing y Alianzas",
+        qr_contact_phone: "Teléfono",
+        btn_save_contact: "Guardar contacto",
+        btn_close: "Listo"
+      }
+    };
+
+    // Slide Navigation Functions
+    function goToSlide(index) {
+      if (index < 0 || index >= totalSlides) return;
+      
+      const slides = document.querySelectorAll('.slide-item');
+      const dots = document.querySelectorAll('.slide-dot');
+
+      slides.forEach((slide, idx) => {
+        if (idx === index) {
+          slide.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-full', '-translate-x-full');
+          slide.classList.add('opacity-100', 'pointer-events-auto', 'translate-x-0');
+        } else if (idx < index) {
+          slide.classList.remove('opacity-100', 'pointer-events-auto', 'translate-x-0', 'translate-x-full');
+          slide.classList.add('opacity-0', 'pointer-events-none', '-translate-x-full');
+        } else {
+          slide.classList.remove('opacity-100', 'pointer-events-auto', 'translate-x-0', '-translate-x-full');
+          slide.classList.add('opacity-0', 'pointer-events-none', 'translate-x-full');
+        }
+      });
+
+      // Update Navigation Dots
+      dots.forEach((dot, idx) => {
+        if (idx === index) {
+          dot.className = "slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-medcore-emerald text-white active-pill shadow-sm";
+        } else {
+          dot.className = "slide-dot px-3 py-1 rounded-full text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200";
+        }
+      });
+
+      currentSlide = index;
+
+      // Update Prev / Next Button states
+      document.getElementById('prev-btn').disabled = (currentSlide === 0);
+      const nextBtnText = document.querySelector('#next-btn span');
+      if (currentSlide === totalSlides - 1) {
+        if (nextBtnText) nextBtnText.innerText = currentLang === 'en' ? 'Finish' : 'Finalizar';
+      } else {
+        if (nextBtnText) nextBtnText.innerText = translations[currentLang].nav_next;
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        goToSlide(currentSlide + 1);
+      } else {
+        goToSlide(0); // Loop back to start
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        goToSlide(currentSlide - 1);
+      }
+    }
+
+    // Toggle View Modes (Step Pitch Deck vs All-in-One Dashboard)
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const deckView = document.getElementById('presentation-view');
+      const overviewView = document.getElementById('overview-view');
+      const deckBtn = document.getElementById('mode-deck-btn');
+      const overviewBtn = document.getElementById('mode-overview-btn');
+
+      if (mode === 'deck') {
+        deckView.classList.remove('hidden');
+        overviewView.classList.add('hidden');
+        
+        deckBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-medcore-emerald text-white shadow-sm";
+        overviewBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 text-slate-600 hover:text-slate-900";
+      } else {
+        deckView.classList.add('hidden');
+        overviewView.classList.remove('hidden');
+
+        overviewBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-medcore-emerald text-white shadow-sm";
+        deckBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 text-slate-600 hover:text-slate-900";
+      }
+    }
+
+    // Language Toggle Functionality
+    function setLanguage(lang) {
+      currentLang = lang;
+      const btnEn = document.getElementById('lang-en');
+      const btnEs = document.getElementById('lang-es');
+
+      if (lang === 'en') {
+        btnEn.className = "px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-medcore-emerald shadow-sm font-bold";
+        btnEs.className = "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 font-semibold";
+      } else {
+        btnEs.className = "px-3 py-1.5 rounded-lg transition-all duration-200 bg-white text-medcore-emerald shadow-sm font-bold";
+        btnEn.className = "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800 font-semibold";
+      }
+
+      // Update All Translatable Elements
+      document.querySelectorAll('[data-i18n]').forEach(elem => {
+        const key = elem.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          elem.innerHTML = translations[lang][key];
+        }
+      });
+
+      // Refresh Next Button Label
+      goToSlide(currentSlide);
+    }
+
+    // Modal Control Functions
+    function openQRModal() {
+      const modal = document.getElementById('qr-modal');
+      const card = document.getElementById('qr-modal-card');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      card.classList.remove('scale-95');
+      card.classList.add('scale-100');
+    }
+
+    function closeQRModal() {
+      const modal = document.getElementById('qr-modal');
+      const card = document.getElementById('qr-modal-card');
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      card.classList.remove('scale-100');
+      card.classList.add('scale-95');
+    }
+
+    function saveContactCard() {
+      const contactFile = new Blob([contactVCard], { type: 'text/vcard;charset=utf-8' });
+      const downloadUrl = URL.createObjectURL(contactFile);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = 'veronica-carlos.vcf';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+
+    // Copy Contact Details to Clipboard
+    function copyContactInfo() {
+      const contactText = `Medcore Specialty Rx Corp.\nPhone: 212-832-7200\nFax: 212-832-7211\nAddress: 1058 1st Ave, New York, NY 10022`;
+      
+      const tempInput = document.createElement("textarea");
+      tempInput.value = contactText;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      const copyBtnText = document.getElementById('copy-btn-text');
+      const originalText = copyBtnText.innerText;
+      copyBtnText.innerText = currentLang === 'en' ? 'Copied to Clipboard!' : '¡Copiado al Portapapeles!';
+      
+      setTimeout(() => {
+        copyBtnText.innerText = originalText;
+      }, 2500);
+    }
+
+    // Setup iPad Touch Swipe Handlers
+    const presentationArea = document.getElementById('presentation-view');
+    presentationArea.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    presentationArea.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, false);
+
+    function handleSwipe() {
+      const threshold = 50; // min swipe distance in px
+      if (touchEndX < touchStartX - threshold) {
+        nextSlide(); // Swipe left -> Next slide
+      }
+      if (touchEndX > touchStartX + threshold) {
+        prevSlide(); // Swipe right -> Previous slide
+      }
+    }
+
+    // Keyboard Arrow Key Support for Testing / Desktop
+    document.addEventListener('keydown', (e) => {
+      if (currentViewMode !== 'deck') return;
+      if (e.key === 'ArrowRight' || e.key === 'Space') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+
+    // Initial Load Setup
+    window.onload = function() {
+      new QRCode(document.getElementById('qr-code'), {
+        text: contactVCard,
+        width: 192,
+        height: 192,
+        colorDark: '#2E7D32',
+        colorLight: '#F8FAFC',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      goToSlide(0);
+    };
+  </script>
+</body>
+</html>
